@@ -125,5 +125,7 @@ venv.bak/
 dmypy.json
 
 /filelists/CUB/*.tgz
+/filelists/CUB/*.txt
+/filelists/CUB/CUB_200_2011/
 /filelists/omniglot/*.zip
 /filelists/emnist/*.zip
