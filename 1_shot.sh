@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --ntasks-per-node=32
 #SBATCH --mem=127000M
-#SBATCH --time=3-00:00
+#SBATCH --time=0-08:00
 #SBATCH --account=rrg-ebrahimi
 
 nvidia-smi
@@ -57,9 +57,9 @@ date +"%T"
 cd $SLURM_TMPDIR
 cd CloserLookFewShot
 
-python ./train.py --dataset miniImagenet --model ResNet10 --method baseline --train_aug
-python ./save_features.py --dataset miniImagenet --model ResNet10 --method baseline --train_aug
-python ./test.py --dataset miniImagenet --model ResNet10 --method baseline --train_aug
+python ./train.py --dataset miniImagenet --model ResNet10 --method baseline++ --train_aug --n_shot 1
+python ./save_features.py --dataset miniImagenet --model ResNet10 --method baseline++ --train_aug --n_shot 1
+python ./test.py --dataset miniImagenet --model ResNet10 --method baseline++ --train_aug --n_shot 1
 
 echo "-----------------------------------<End of run the program>---------------------------------"
 date +"%T"
