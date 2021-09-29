@@ -136,7 +136,7 @@ class ConvBlock(nn.Module):
             self.BN = BatchNorm2d_fw(outdim)
         else:
             self.C = nn.Conv2d(indim, outdim, 3, padding=padding)
-            self.BN = nn.BatchNorm2d(outdim, self.use_affine)
+            self.BN = nn.BatchNorm2d(outdim, affine=self.use_affine)
         self.relu = nn.ReLU(inplace=True)
 
         self.parametrized_layers = [self.C, self.BN, self.relu]
