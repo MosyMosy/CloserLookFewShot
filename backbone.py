@@ -11,7 +11,7 @@ from torch.nn.utils.weight_norm import WeightNorm
 
 # Basic ResNet model
 
-_use_affine = False
+_use_affine = True
 
 def init_layer(L, use_affine=True):
     # Initialization using fan-in
