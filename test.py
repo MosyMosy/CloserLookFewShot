@@ -157,7 +157,7 @@ if __name__ == '__main__':
         print('%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
     
     timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime()) 
-    with open('./record/results_{0}_{1}_{2}_{3}.txt'.format(params.method, params.dataset, params.model, timestamp) , 'a') as f:
+    with open('{0}/results_{1}_{2}_{3}_{4}.txt'.format(params.save_dir, params.method, params.dataset, params.model, timestamp) , 'a') as f:
         aug_str = '-aug' if params.train_aug else ''
         aug_str += '-adapted' if params.adaptation else ''
         if params.method in ['baseline', 'baseline++'] :
