@@ -1,0 +1,1 @@
+Time: 20210930-053751, Setting: miniImagenet-novel-ResNet10-baseline++-aug 1shot 5way_test, Acc: 600 Test Acc = 54.41% +- 0.80% 
