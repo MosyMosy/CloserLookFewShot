@@ -1,23 +1,27 @@
+import glob
+import os
+import random
+import time
+
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.optim
 import torch.optim.lr_scheduler as lr_scheduler
-import time
-import os
-import glob
+from torch.autograd import Variable
 
-import configs
 import backbone
-from data.datamgr import SimpleDataManager, SetDataManager
-from methods.baselinetrain import BaselineTrain
+import backbone_no_affine
+import configs
+from data.datamgr import SetDataManager, SimpleDataManager
+from io_utils import get_resume_file, model_dict, parse_args
 from methods.baselinefinetune import BaselineFinetune
-from methods.protonet import ProtoNet
-from methods.matchingnet import MatchingNet
-from methods.relationnet import RelationNet
+from methods.baselinetrain import BaselineTrain
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file  
+from methods.matchingnet import MatchingNet
+from methods.protonet import ProtoNet
+from methods.relationnet import RelationNet
+
 
 def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch, params):    
     if optimization == 'Adam':
@@ -48,9 +52,22 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
 
     return model
 
-if __name__=='__main__':
-    np.random.seed(10)
+if __name__=='__main__':    
     params = parse_args('train')
+    
+    if torch.cuda.is_available():
+        dev = "cuda:{0}".format(params.gpu)
+    else:
+        dev = "cpu"
+    device = torch.device(dev)
+
+    # seed the random number generator
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(params.seed)
+    torch.cuda.manual_seed(params.seed)
+    np.random.seed(params.seed)
+    random.seed(params.seed)
 
 
     if params.dataset == 'cross':
@@ -135,6 +152,12 @@ if __name__=='__main__':
                 feature_model = backbone.Conv6NP
             elif params.model == 'Conv4S': 
                 feature_model = backbone.Conv4SNP
+            elif params.model == 'Conv4_na': 
+                model = backbone_no_affine.Conv4NP()
+            elif params.model == 'Conv6_na': 
+                model = backbone_no_affine.Conv6NP()
+            elif params.model == 'Conv4S_na': 
+                model = backbone_no_affine.Conv4SNP()
             else:
                 feature_model = lambda: model_dict[params.model]( flatten = False )
             loss_type = 'mse' if params.method == 'relationnet' else 'softmax'

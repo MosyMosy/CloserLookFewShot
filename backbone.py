@@ -8,20 +8,17 @@ import numpy as np
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import WeightNorm
 
-
 # Basic ResNet model
 
-_use_affine = False
 
-def init_layer(L, use_affine=True):
+def init_layer(L):
     # Initialization using fan-in
     if isinstance(L, nn.Conv2d):
         n = L.kernel_size[0]*L.kernel_size[1]*L.out_channels
         L.weight.data.normal_(0, math.sqrt(2.0/float(n)))
     elif isinstance(L, nn.BatchNorm2d):
-        if use_affine:
-            L.weight.data.fill_(1)
-            L.bias.data.fill_(0)
+        L.weight.data.fill_(1)
+        L.bias.data.fill_(0)
 
 
 class distLinear(nn.Module):
@@ -125,7 +122,6 @@ class BatchNorm2d_fw(nn.BatchNorm2d):
 
 class ConvBlock(nn.Module):
     maml = False  # Default
-    use_affine = _use_affine
 
     def __init__(self, indim, outdim, pool=True, padding=1):
         super(ConvBlock, self).__init__()
@@ -136,7 +132,7 @@ class ConvBlock(nn.Module):
             self.BN = BatchNorm2d_fw(outdim)
         else:
             self.C = nn.Conv2d(indim, outdim, 3, padding=padding)
-            self.BN = nn.BatchNorm2d(outdim, affine=self.use_affine)
+            self.BN = nn.BatchNorm2d(outdim)
         self.relu = nn.ReLU(inplace=True)
 
         self.parametrized_layers = [self.C, self.BN, self.relu]
@@ -145,7 +141,7 @@ class ConvBlock(nn.Module):
             self.parametrized_layers.append(self.pool)
 
         for layer in self.parametrized_layers:
-            init_layer(layer, self.use_affine)
+            init_layer(layer)
 
         self.trunk = nn.Sequential(*self.parametrized_layers)
 
@@ -158,7 +154,6 @@ class ConvBlock(nn.Module):
 
 class SimpleBlock(nn.Module):
     maml = False  # Default
-    use_affine = _use_affine
 
     def __init__(self, indim, outdim, half_res):
         super(SimpleBlock, self).__init__()
@@ -174,10 +169,10 @@ class SimpleBlock(nn.Module):
         else:
             self.C1 = nn.Conv2d(indim, outdim, kernel_size=3,
                                 stride=2 if half_res else 1, padding=1, bias=False)
-            self.BN1 = nn.BatchNorm2d(outdim, affine=self.use_affine)
+            self.BN1 = nn.BatchNorm2d(outdim)
             self.C2 = nn.Conv2d(
                 outdim, outdim, kernel_size=3, padding=1, bias=False)
-            self.BN2 = nn.BatchNorm2d(outdim, affine=self.use_affine)
+            self.BN2 = nn.BatchNorm2d(outdim)
         self.relu1 = nn.ReLU(inplace=True)
         self.relu2 = nn.ReLU(inplace=True)
 
@@ -194,8 +189,7 @@ class SimpleBlock(nn.Module):
             else:
                 self.shortcut = nn.Conv2d(
                     indim, outdim, 1, 2 if half_res else 1, bias=False)
-                self.BNshortcut = nn.BatchNorm2d(
-                    outdim, affine=self.use_affine)
+                self.BNshortcut = nn.BatchNorm2d(outdim)
 
             self.parametrized_layers.append(self.shortcut)
             self.parametrized_layers.append(self.BNshortcut)
@@ -204,7 +198,7 @@ class SimpleBlock(nn.Module):
             self.shortcut_type = 'identity'
 
         for layer in self.parametrized_layers:
-            init_layer(layer, self.use_affine)
+            init_layer(layer)
 
     def forward(self, x):
         out = self.C1(x)
@@ -222,7 +216,6 @@ class SimpleBlock(nn.Module):
 # Bottleneck block
 class BottleneckBlock(nn.Module):
     maml = False  # Default
-    use_affine = _use_affine
 
     def __init__(self, indim, outdim, half_res):
         super(BottleneckBlock, self).__init__()
@@ -242,13 +235,13 @@ class BottleneckBlock(nn.Module):
         else:
             self.C1 = nn.Conv2d(indim, bottleneckdim,
                                 kernel_size=1,  bias=False)
-            self.BN1 = nn.BatchNorm2d(bottleneckdim, affine=self.use_affine)
+            self.BN1 = nn.BatchNorm2d(bottleneckdim)
             self.C2 = nn.Conv2d(bottleneckdim, bottleneckdim,
                                 kernel_size=3, stride=2 if half_res else 1, padding=1)
-            self.BN2 = nn.BatchNorm2d(bottleneckdim, affine=self.use_affine)
+            self.BN2 = nn.BatchNorm2d(bottleneckdim)
             self.C3 = nn.Conv2d(bottleneckdim, outdim,
                                 kernel_size=1, bias=False)
-            self.BN3 = nn.BatchNorm2d(outdim, affine=self.use_affine)
+            self.BN3 = nn.BatchNorm2d(outdim)
 
         self.relu = nn.ReLU()
         self.parametrized_layers = [
@@ -270,7 +263,7 @@ class BottleneckBlock(nn.Module):
             self.shortcut_type = 'identity'
 
         for layer in self.parametrized_layers:
-            init_layer(layer, self.use_affine)
+            init_layer(layer)
 
     def forward(self, x):
 
@@ -377,7 +370,6 @@ class ConvNetSNopool(nn.Module):
 
 class ResNet(nn.Module):
     maml = False  # Default
-    use_affine = _use_affine
 
     def __init__(self, block, list_of_num_layers, list_of_out_dims, flatten=True):
         # list_of_num_layers specifies number of layers in each stage
@@ -391,13 +383,13 @@ class ResNet(nn.Module):
         else:
             conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                               bias=False)
-            bn1 = nn.BatchNorm2d(64, affine=self.use_affine)
+            bn1 = nn.BatchNorm2d(64)
 
         relu = nn.ReLU()
         pool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        init_layer(conv1, self.use_affine)
-        init_layer(bn1, self.use_affine)
+        init_layer(conv1)
+        init_layer(bn1)
 
         trunk = [conv1, bn1, relu, pool1]
 

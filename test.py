@@ -46,6 +46,20 @@ def feature_evaluation(cl_data_file, model, n_way = 5, n_support = 5, n_query = 
 
 if __name__ == '__main__':
     params = parse_args('test')
+    
+    if torch.cuda.is_available():
+        dev = "cuda:{0}".format(params.gpu)
+    else:
+        dev = "cpu"
+    device = torch.device(dev)
+
+    # seed the random number generator
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(params.seed)
+    torch.cuda.manual_seed(params.seed)
+    np.random.seed(params.seed)
+    random.seed(params.seed)
 
     acc_all = []
 
@@ -156,8 +170,9 @@ if __name__ == '__main__':
         acc_std  = np.std(acc_all)
         print('%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
     
-    timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime()) 
-    with open('{0}/results_{1}_{2}_{3}_{4}.txt'.format(configs.save_dir, params.method, params.dataset, params.model, timestamp) , 'a') as f:
+     
+    with open('{0}/results.txt'.format(checkpoint_dir) , 'a') as f:
+        timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
         aug_str = '-aug' if params.train_aug else ''
         aug_str += '-adapted' if params.adaptation else ''
         if params.method in ['baseline', 'baseline++'] :

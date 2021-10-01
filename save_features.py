@@ -1,20 +1,24 @@
+import glob
+import os
+import random
+
+import h5py
 import numpy as np
 import torch
 from torch.autograd import Variable
-import os
-import glob
-import h5py
 
-import configs
 import backbone
+import backbone_no_affine
+import configs
 from data.datamgr import SimpleDataManager
-from methods.baselinetrain import BaselineTrain
+from io_utils import (get_assigned_file, get_best_file, get_resume_file,
+                      model_dict, parse_args)
 from methods.baselinefinetune import BaselineFinetune
-from methods.protonet import ProtoNet
-from methods.matchingnet import MatchingNet
-from methods.relationnet import RelationNet
+from methods.baselinetrain import BaselineTrain
 from methods.maml import MAML
-from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file 
+from methods.matchingnet import MatchingNet
+from methods.protonet import ProtoNet
+from methods.relationnet import RelationNet
 
 
 def save_features(model, data_loader, outfile ):
@@ -43,6 +47,20 @@ def save_features(model, data_loader, outfile ):
 if __name__ == '__main__':
     params = parse_args('save_features')
     assert params.method != 'maml' and params.method != 'maml_approx', 'maml do not support save_feature and run'
+    
+    if torch.cuda.is_available():
+        dev = "cuda:{0}".format(params.gpu)
+    else:
+        dev = "cpu"
+    device = torch.device(dev)
+
+    # seed the random number generator
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(params.seed)
+    torch.cuda.manual_seed(params.seed)
+    np.random.seed(params.seed)
+    random.seed(params.seed)
 
     if 'Conv' in params.model:
         if params.dataset in ['omniglot', 'cross_char']:
@@ -98,6 +116,12 @@ if __name__ == '__main__':
             model = backbone.Conv6NP()
         elif params.model == 'Conv4S': 
             model = backbone.Conv4SNP()
+        elif params.model == 'Conv4_na': 
+            model = backbone_no_affine.Conv4NP()
+        elif params.model == 'Conv6_na': 
+            model = backbone_no_affine.Conv6NP()
+        elif params.model == 'Conv4S_na': 
+            model = backbone_no_affine.Conv4SNP()
         else:
             model = model_dict[params.model]( flatten = False )
     elif params.method in ['maml' , 'maml_approx']: 
