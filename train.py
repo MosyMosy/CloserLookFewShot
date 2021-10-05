@@ -59,7 +59,7 @@ if __name__=='__main__':
         dev = "cuda:{0}".format(params.gpu)
     else:
         dev = "cpu"
-    device = torch.device(dev)
+    configs.device = torch.device(dev)
 
     # seed the random number generator
     torch.backends.cudnn.deterministic = True
@@ -176,7 +176,7 @@ if __name__=='__main__':
     else:
        raise ValueError('Unknown method')
 
-    model = model.cuda()
+    model = model.to(configs.device)
 
     params.checkpoint_dir = '%s/checkpoints/%s/%s_%s' %(configs.save_dir, params.dataset, params.model, params.method)
     if params.train_aug:

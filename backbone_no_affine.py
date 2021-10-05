@@ -7,6 +7,7 @@ import math
 import numpy as np
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import WeightNorm
+import configs
 
 
 # Basic ResNet model
@@ -104,15 +105,16 @@ class Conv2d_fw(nn.Conv2d):  # used in MAML to forward input with fast weight
 
 # used in MAML to forward input with fast weight
 class BatchNorm2d_fw(nn.BatchNorm2d):
-    def __init__(self, num_features):
-        super(BatchNorm2d_fw, self).__init__(num_features)
-        self.weight.fast = None
-        self.bias.fast = None
+    def __init__(self, num_features, use_affine = False):
+        super(BatchNorm2d_fw, self).__init__(num_features, affine = use_affine)
+        if use_affine:
+            self.weight.fast = None
+            self.bias.fast = None
 
     def forward(self, x):
-        running_mean = torch.zeros(x.data.size()[1]).cuda()
-        running_var = torch.ones(x.data.size()[1]).cuda()
-        if self.weight.fast is not None and self.bias.fast is not None:
+        running_mean = torch.zeros(x.data.size()[1]).to(configs.device)
+        running_var = torch.ones(x.data.size()[1]).to(configs.device)
+        if self.weight.fast is not None and self.bias.fast is not None and self.affine:
             out = F.batch_norm(x, running_mean, running_var, self.weight.fast,
                                self.bias.fast, training=True, momentum=1)
             # batch_norm momentum hack: follow hack of Kate Rakelly in pytorch-maml/src/layers.py

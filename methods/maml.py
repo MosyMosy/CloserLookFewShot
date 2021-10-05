@@ -7,6 +7,7 @@ from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
 from methods.meta_template import MetaTemplate
+import configs
 
 class MAML(MetaTemplate):
     def __init__(self, model_func,  n_way, n_support, approx = False):
@@ -28,11 +29,11 @@ class MAML(MetaTemplate):
 
     def set_forward(self,x, is_feature = False):
         assert is_feature == False, 'MAML do not support fixed feature' 
-        x = x.cuda()
+        x = x.to(configs.device)
         x_var = Variable(x)
         x_a_i = x_var[:,:self.n_support,:,:,:].contiguous().view( self.n_way* self.n_support, *x.size()[2:]) #support data 
         x_b_i = x_var[:,self.n_support:,:,:,:].contiguous().view( self.n_way* self.n_query,   *x.size()[2:]) #query data
-        y_a_i = Variable( torch.from_numpy( np.repeat(range( self.n_way ), self.n_support ) )).cuda() #label for support data
+        y_a_i = Variable( torch.from_numpy( np.repeat(range( self.n_way ), self.n_support ) )).to(configs.device) #label for support data
         
         fast_parameters = list(self.parameters()) #the first gradient calcuated in line 45 is based on original weight
         for weight in self.parameters():
@@ -63,7 +64,7 @@ class MAML(MetaTemplate):
 
     def set_forward_loss(self, x):
         scores = self.set_forward(x, is_feature = False)
-        y_b_i = Variable( torch.from_numpy( np.repeat(range( self.n_way ), self.n_query   ) )).cuda()
+        y_b_i = Variable( torch.from_numpy( np.repeat(range( self.n_way ), self.n_query   ) )).to(configs.device)
         loss = self.loss_fn(scores, y_b_i)
 
         return loss

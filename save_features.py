@@ -30,7 +30,7 @@ def save_features(model, data_loader, outfile ):
     for i, (x,y) in enumerate(data_loader):
         if i%10 == 0:
             print('{:d}/{:d}'.format(i, len(data_loader)))
-        x = x.cuda()
+        x = x.to(configs.device)
         x_var = Variable(x)
         feats = model(x_var)
         if all_feats is None:
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         dev = "cuda:{0}".format(params.gpu)
     else:
         dev = "cpu"
-    device = torch.device(dev)
+    configs.device = torch.device(dev)
 
     # seed the random number generator
     torch.backends.cudnn.deterministic = True
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     else:
         model = model_dict[params.model]()
 
-    model = model.cuda()
+    model = model.to(configs.device)
     tmp = torch.load(modelfile)
     state = tmp['state']
     state_keys = list(state.keys())

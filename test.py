@@ -51,7 +51,7 @@ if __name__ == '__main__':
         dev = "cuda:{0}".format(params.gpu)
     else:
         dev = "cpu"
-    device = torch.device(dev)
+    configs.device = torch.device(dev)
 
     # seed the random number generator
     torch.backends.cudnn.deterministic = True
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     else:
        raise ValueError('Unknown method')
 
-    model = model.cuda()
+    model = model.to(configs.device)
 
     checkpoint_dir = '%s/checkpoints/%s/%s_%s' %(configs.save_dir, params.dataset, params.model, params.method)
     if params.train_aug:
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         print('%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
     
      
-    with open('{0}/results.txt'.format(checkpoint_dir) , 'a') as f:
+    with open('{0}/results_{1}shots.txt'.format(checkpoint_dir, params.n_shot) , 'a') as f:
         timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
         aug_str = '-aug' if params.train_aug else ''
         aug_str += '-adapted' if params.adaptation else ''

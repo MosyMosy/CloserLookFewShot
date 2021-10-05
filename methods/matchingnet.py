@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from methods.meta_template import MetaTemplate
 import utils
 import copy
+import configs
 
 class MatchingNet(MetaTemplate):
     def __init__(self, model_func,  n_way, n_support):
@@ -52,22 +53,22 @@ class MatchingNet(MetaTemplate):
         G, G_normalized = self.encode_training_set( z_support)
 
         y_s         = torch.from_numpy(np.repeat(range( self.n_way ), self.n_support ))
-        Y_S         = Variable( utils.one_hot(y_s, self.n_way ) ).cuda()
+        Y_S         = Variable( utils.one_hot(y_s, self.n_way ) ).to(configs.device)
         f           = z_query
         logprobs = self.get_logprobs(f, G, G_normalized, Y_S)
         return logprobs
 
     def set_forward_loss(self, x):
         y_query = torch.from_numpy(np.repeat(range( self.n_way ), self.n_query ))
-        y_query = Variable(y_query.cuda())
+        y_query = Variable(y_query.to(configs.device))
 
         logprobs = self.set_forward(x)
 
         return self.loss_fn(logprobs, y_query )
 
     def cuda(self):
-        super(MatchingNet, self).cuda()
-        self.FCE = self.FCE.cuda()
+        super(MatchingNet, self).to(configs.device)
+        self.FCE = self.FCE.to(configs.device)
         return self
 
 class FullyContextualEmbedding(nn.Module):
@@ -95,7 +96,7 @@ class FullyContextualEmbedding(nn.Module):
 
         return h
     def cuda(self):
-        super(FullyContextualEmbedding, self).cuda()
-        self.c_0 = self.c_0.cuda()
+        super(FullyContextualEmbedding, self).to(configs.device)
+        self.c_0 = self.c_0.to(configs.device)
         return self
 

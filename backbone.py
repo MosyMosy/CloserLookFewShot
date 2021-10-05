@@ -7,6 +7,7 @@ import math
 import numpy as np
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import WeightNorm
+import configs
 
 # Basic ResNet model
 
@@ -106,8 +107,8 @@ class BatchNorm2d_fw(nn.BatchNorm2d):
         self.bias.fast = None
 
     def forward(self, x):
-        running_mean = torch.zeros(x.data.size()[1]).cuda()
-        running_var = torch.ones(x.data.size()[1]).cuda()
+        running_mean = torch.zeros(x.data.size()[1]).to(configs.device)
+        running_var = torch.ones(x.data.size()[1]).to(configs.device)
         if self.weight.fast is not None and self.bias.fast is not None:
             out = F.batch_norm(x, running_mean, running_var, self.weight.fast,
                                self.bias.fast, training=True, momentum=1)
